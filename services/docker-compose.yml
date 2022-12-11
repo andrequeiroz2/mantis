@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+
+  db_user:
+    image: postgres:15.1
+    container_name: db_user
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_DB: "user"
+    ports:
+      - "15432:5432"
+    volumes:
+      - db_user:/var/lib/postgresql/data
+      - ./user_service/app/database/script_db/start.sql:/docker-entrypoint-initdb.d/start.sql
+    networks:
+      - vpc-back
+
+networks:
+  vpc-back:
+    name: 'vpc-back'
+    driver: bridge
+
+volumes:
+  db_user:
