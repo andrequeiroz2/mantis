@@ -1,4 +1,4 @@
-from fastapi import Depends, status, Header
+from fastapi import Depends, status
 from fastapi_utils.inferring_router import InferringRouter
 from dependency.oauth import oauth2_scheme
 from schema.token import TokenSchema
@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from database.base import get_db
 from business.user import UserBusiness
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
 
 user_router = InferringRouter()
 
@@ -23,7 +24,7 @@ async def user_create(user_body: UserCreateSchema, db: Session = Depends(get_db)
     return UserSchema(username=user.username, email=user.email)
 
 
-@user_router.post("/user/token", response_model=TokenSchema)
+@user_router.post("/user/login", response_model=TokenSchema)
 async def user_login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     return await UserBusiness(db).user_login(form_data)
 

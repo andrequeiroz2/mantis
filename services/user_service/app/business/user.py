@@ -116,18 +116,15 @@ class UserBusiness:
         """
         detail_field = {}
 
-        if user_body.password != user_body.confirm_password:
-            detail_field["confirm_password"] = "confirm password different from password"
-
         if len(user_body.username) > 50 or len(user_body.username) < 5:
-            detail_field["name"] = "name must have a maximum of 50 and a minimum of 5 digits."
+            detail_field["username"] = "name must have a maximum of 50 and a minimum of 5 digits"
 
         email = user_body.email.replace(" ", "")
         if len(email) > 60 or not re.fullmatch(r"[^@]+@[^@]+\.[^@]+", email):
-            detail_field["email"] = "invalid email."
+            detail_field["email"] = "invalid email"
 
         if len(user_body.password) > 50 or len(user_body.password) < 8:
-            detail_field["password"] = "password must have a maximum of 50 and a minimum of 8 digits."
+            detail_field["password"] = "password must have a maximum of 50 and a minimum of 8 digits"
 
         if user_body.password != user_body.confirm_password:
             detail_field["confirm_password"] = "password different from confirm_password"
