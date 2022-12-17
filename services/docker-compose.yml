@@ -18,6 +18,23 @@ services:
     networks:
       - vpc-back
 
+  db_device:
+    image: postgres:15.1
+    container_name: db_device
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_DB: "devices"
+    ports:
+      - "15433:5432"
+    volumes:
+      - db_device:/var/lib/postgresql/data
+#      - ./user_service/app/database/script_db/start.sql:/docker-entrypoint-initdb.d/start.sql
+    networks:
+      - vpc-back
+
+
   nginx:
     image: nginx:1.22
     container_name: nginx
@@ -56,3 +73,4 @@ networks:
 
 volumes:
   db_user:
+  db_device:
