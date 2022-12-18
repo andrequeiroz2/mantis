@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from core.config import settings
-# from endpoint.device import device_router
+from endpoint.device import device_router
 from starlette.responses import RedirectResponse
 import uvicorn
 
@@ -13,7 +13,7 @@ app = FastAPI()
 #     return RedirectResponse(url="/docs/")
 
 
-# app.include_router(device_router, tags=["Device"], prefix="/api/deviceservice")
+app.include_router(device_router, tags=["Device"], prefix="/api/deviceservice")
 
 
 if __name__ == "__main__":
