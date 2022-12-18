@@ -23,7 +23,7 @@ class BoardTypeModel(Base, TimestampMixin):
     version = Column(String(10), nullable=False)
     description = Column(String(150))
 
-    controller = relationship("BoardModel", back_populates="board_types", innerjoin=True)
+    # controller = relationship("BoardModel", back_populates="board_types", innerjoin=True)
 
 
 class BoardModel(Base, TimestampMixin):
@@ -38,7 +38,7 @@ class BoardModel(Base, TimestampMixin):
     user_uuid = Column(UUIDType(binary=False), nullable=False, index=True)
     location_uuid = Column(UUIDType(binary=False), nullable=False, index=True)
 
-    board_types = relationship("BoardTypeModel", back_populates="controller", innerjoin=True)
+    # board_types = relationship("BoardTypeModel", back_populates="controller", innerjoin=True)
     shild = relationship("ShildModel", back_populates="board", innerjoin=True)
 
 
@@ -61,7 +61,7 @@ class ShildModel(Base, TimestampMixin):
     command_off = Column(String(120))
     command_generic = Column(String(120))
 
-    board_id = Column(Integer, ForeignKey("boards.id"), nullable=False)
+    board_id = Column(Integer, ForeignKey("boards.id", ondelete="CASCADE"), nullable=False)
 
     board = relationship("BoardModel", back_populates="shild", innerjoin=True)
 
