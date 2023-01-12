@@ -1,20 +1,17 @@
-from fastapi import Depends, status
+from fastapi import Depends, status, Header
 from fastapi_utils.inferring_router import InferringRouter
-from dependency.oauth import oauth2_scheme
 from schema.token import TokenSchema
 from schema.user import UserSchema, UserCreateSchema, UserListSchema
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from database.base import get_db
 from business.user import UserBusiness
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 
 user_router = InferringRouter()
 
-
 @user_router.get("/users")
-async def user_get_all(_token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> UserListSchema:
+async def user_get_all(db: Session = Depends(get_db)) -> UserListSchema:
     return await UserBusiness(db).user_get_all()
 
 
@@ -29,9 +26,11 @@ async def user_login(form_data: OAuth2PasswordRequestForm = Depends(), db: Sessi
     return await UserBusiness(db).user_login(form_data)
 
 
-@user_router.post("/user/token/validate")
-async def user_login(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    oi = await UserBusiness(db).decode_token(token)
-    print(oi)
-    return oi
+@user_router.post("/auth", status_code=status.HTTP_200_OK)
+async def access_validation(authorization: str = Header(None), db: Session = Depends(get_db)):
+    await UserBusiness(db).decode_token(authorization)
 
+
+@user_router.post("/health", status_code=status.HTTP_200_OK)
+async def health():
+    return {"status": "ok"}

@@ -4,7 +4,7 @@ from jose import jwt
 from datetime import datetime, timedelta
 from typing import Union
 from fastapi import HTTPException, status
-
+from jose.exceptions import JOSEError
 
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM
@@ -36,9 +36,9 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
         )
 
 
-def decode_access_token(token: oauth2_scheme):
-    # try:
-    decoded = jwt.decode(token, SECRET_KEY, ALGORITHM)
-    return decoded
+def decode_access_token(token: str):
+    try:
+        _decoded = jwt.decode(token, SECRET_KEY, ALGORITHM)
+    except (JOSEError, AttributeError):
+        raise HTTPException(status_code=401)
 
-        # raise "not authorized"

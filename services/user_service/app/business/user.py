@@ -74,10 +74,9 @@ class UserBusiness:
 
         return TokenSchema(access_token=access_token)
 
-    async def decode_token(self, token: oauth2_scheme):
-        result = decode_access_token(token)
-        print(result)
-        return result
+    async def decode_token(self, token: str):
+        decode_access_token(token)
+
 
     @staticmethod
     def _password_hashed(password: str) -> str:

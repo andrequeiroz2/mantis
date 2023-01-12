@@ -23,6 +23,18 @@ class BoardRouter:
             db: Session = Depends(get_db)) -> BoardTypeSchema:
         return await BoardBusiness(db).board_type_get(board_type_id)
 
+    @device_router.put("/boardtype/{board_type_id}")
+    async def board_type_update(
+            self,
+            board_type_id: int,
+            board_type_body: BoardTypeSchema,
+            db: Session = Depends(get_db),
+    ) -> BoardTypeSchema:
+        return await BoardBusiness(db).board_type_update(
+            board_type_id=board_type_id,
+            board_type_body=board_type_body
+        )
+
 
 @cbv(device_router)
 class HealthRouter:

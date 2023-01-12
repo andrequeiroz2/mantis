@@ -20,7 +20,7 @@ RUN pip install -r requirements.txt
 # Copia aplicacao
 COPY app ./
 
-EXPOSE 8000
+EXPOSE 8010
 
-CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "--bind", ":8000", "main:app"]
+CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "--bind", ":8010", "main:app"]
 
