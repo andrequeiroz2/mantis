@@ -35,3 +35,22 @@ class BoardBusiness:
             )
 
         return BoardTypeSchema(model=board_type.model, version=board_type.version, description=board_type.description)
+
+    async def board_type_update(self, board_type_id: int, board_type_body: BoardTypeSchema) -> BoardTypeSchema:
+        board_type = self.db.query(BoardTypeModel).filter_by(id=board_type_id).first()
+        if board_type is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": "board type not found"},
+                headers={"X-Error": "path error"}
+            )
+
+        board_type.model = board_type_body.model
+        board_type.version = board_type_body.version
+        board_type.description = board_type_body.description
+
+        self.db.add(board_type)
+
+        return BoardTypeSchema(model=board_type.model, version=board_type.version, description=board_type.description)
+
+

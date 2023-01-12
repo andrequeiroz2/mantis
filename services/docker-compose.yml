@@ -35,18 +35,20 @@ services:
       - vpc-back
 
 
-  nginx:
-    image: nginx:1.22
-    container_name: nginx
-    restart: unless-stopped
-    ports:
-      - "8080:80"
-    depends_on:
-      - user_service
-    volumes:
-      - ./nginx_service/nginx.conf:/etc/nginx/nginx.conf
-    networks:
-      - vpc-back
+#  nginx:
+#    image: bitnami/nginx:1.14.2-r34
+##    image: nginx:1.22
+#    container_name: nginx
+#    restart: unless-stopped
+#    ports:
+#      - "8080:80"
+#    depends_on:
+#      - user_service
+#      - device_service
+#    volumes:
+#      - ./nginx_service/nginx.conf:/etc/nginx/nginx.conf
+#    networks:
+#      - vpc-back
 
   user_service:
     image: service/user_service
@@ -60,11 +62,121 @@ services:
     volumes:
       - ./user_service/app:/app
     ports:
-      - "8000:8000"
+      - "8010:8010"
     depends_on:
       - db_user
     networks:
       - vpc-back
+
+  device_service:
+    image: service/device_service
+    container_name: device_service
+    restart: unless-stopped
+    build:
+      context: ./device_service
+      dockerfile: Dockerfile
+    env_file:
+      - device_service/app/.env.device
+    volumes:
+      - ./device_service/app:/app
+    ports:
+      - "8020:8020"
+    depends_on:
+      - db_device
+    networks:
+      - vpc-back
+
+
+  apisix-dashboard:
+    image: apache/apisix-dashboard:2.15.0-alpine
+    restart: always
+    volumes:
+      - ./api_service/dashboard_conf/conf.yaml:/usr/local/apisix-dashboard/conf/conf.yaml
+    ports:
+      - "9000:9000"
+    networks:
+      vpc-back:
+
+  apisix:
+    image: apache/apisix:latest
+    restart: always
+    user: root
+    volumes:
+      - ./api_service/apisix_log:/usr/local/apisix/logs
+      - ./api_service/apisix_conf/config.yaml:/usr/local/apisix/conf/config.yaml
+    depends_on:
+      - etcd
+    ##network_mode: host
+    ports:
+      - "9180:9180/tcp"
+      - "9080:9080/tcp"
+      - "9091:9091/tcp"
+      - "9443:9443/tcp"
+      - "9092:9092/tcp"
+    networks:
+      vpc-back:
+
+  etcd:
+    image: bitnami/etcd:3.4.15
+    restart: always
+    volumes:
+      - etcd_data:/bitnami/etcd
+    environment:
+      ETCD_ENABLE_V2: "true"
+      ALLOW_NONE_AUTHENTICATION: "yes"
+      ETCD_ADVERTISE_CLIENT_URLS: "http://etcd:2379"
+      ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
+    ports:
+      - "2379:2379/tcp"
+    networks:
+      vpc-back:
+
+  web1:
+    image: nginx:1.19.0-alpine
+    restart: always
+    volumes:
+      - ./api_service/upstream/web1.conf:/etc/nginx/nginx.conf
+    ports:
+      - "9081:80/tcp"
+    environment:
+      - NGINX_PORT=80
+    networks:
+      vpc-back:
+
+  web2:
+    image: nginx:1.19.0-alpine
+    restart: always
+    volumes:
+      - ./api_service/upstream/web2.conf:/etc/nginx/nginx.conf
+    ports:
+      - "9082:80/tcp"
+    environment:
+      - NGINX_PORT=80
+    networks:
+      vpc-back:
+
+  prometheus:
+    image: prom/prometheus:v2.25.0
+    restart: always
+    volumes:
+      - ./api_service/prometheus_conf/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      vpc-back:
+
+  grafana:
+    image: grafana/grafana:7.3.7
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - "./api_service/grafana_conf/provisioning:/etc/grafana/provisioning"
+      - "./api_service/grafana_conf/dashboards:/var/lib/grafana/dashboards"
+      - "./api_service/grafana_conf/config/grafana.ini:/etc/grafana/grafana.ini"
+    networks:
+      vpc-back:
+
 
 networks:
   vpc-back:
@@ -74,3 +186,5 @@ networks:
 volumes:
   db_user:
   db_device:
+  etcd_data:
+    driver: local
