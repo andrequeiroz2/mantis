@@ -1,4 +1,3 @@
-from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from datetime import timedelta
@@ -8,7 +7,6 @@ from database.model.user import UserModel
 from dependency.oauth import ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token, decode_access_token
 import bcrypt
 import re
-from dependency.oauth import oauth2_scheme
 
 
 class UserBusiness:
@@ -30,6 +28,9 @@ class UserBusiness:
             )
         return UserListSchema(users=user_list, total=self.db.query(UserModel).count())
 
+    async def user_get(self, user_id: int) -> UserSchema:
+        return self._user_filter_id(user_id)
+
     async def post_user(self, user_body: UserCreateSchema) -> UserModel:
         """
         Cadastra um novo usuario
@@ -49,28 +50,29 @@ class UserBusiness:
         self.db.commit()
         return new_user
 
-    async def user_login(self, user_body: OAuth2PasswordRequestForm) -> TokenSchema:
+    async def user_login(self, email: str, password: str) -> TokenSchema:
         """
         Login de usuario
-        :param user_body: schema de OAuth2PasswordRequestForm
+        :param email: user email
+        :param password: user password
         :return: token jwt
         """
         login_exception = HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail={"error": "username or password, incorrect"},
+            detail={"error": "email or password, incorrect"},
             headers={"X-Error": "body error"}
         )
 
-        user = self.get_user(user_body.username)
+        user = self._user_filter_email(email)
 
         if not user:
             raise login_exception
 
-        if not self._password_hashed_check(user_body.password, user.hashed_password):
+        if not self._password_hashed_check(password, user.password):
             raise login_exception
 
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token(data={"sub": user.username}, expires_delta=access_token_expires)
+        access_token = create_access_token(data={"email": user.email, "user": user.username}, expires_delta=access_token_expires)
 
         return TokenSchema(access_token=access_token)
 
@@ -106,6 +108,21 @@ class UserBusiness:
         """
         return self.db.query(UserModel).filter_by(email=email).first()
 
+    def _user_filter_id(self, user_id: int) -> UserSchema:
+        """
+        Pesquisa usuario por id
+        :param user_id: id do usuario
+        :return: schema do pydantic
+        """
+        user = self.db.query(UserModel).filter_by(id=user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": "User not found"},
+                headers={"X-Error": "query error"}
+            )
+        return UserSchema( username=user.username, email=user.email)
+
     @staticmethod
     def _user_body_check(user_body: UserCreateSchema):
         """
@@ -135,20 +152,20 @@ class UserBusiness:
                 headers={"X-Error": "body error"}
             )
 
-    def get_user(self, username: str):
-        """
-        Pesquisa usuario por username
-        :param username: username do usuario
-        :return: schema do pydantic
-        """
-        user = self.db.query(UserModel).filter_by(username=username).first()
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail={"error": "User not found"},
-                headers={"X-Error": "body error"}
-            )
-        return UserPassSchema(
-            username=user.username,
-            email=user.email,
-            hashed_password=user.password)
+    # def get_user(self, username: str):
+    #     """
+    #     Pesquisa usuario por username
+    #     :param username: username do usuario
+    #     :return: schema do pydantic
+    #     """
+    #     user = self.db.query(UserModel).filter_by(username=username).first()
+    #     if not user:
+    #         raise HTTPException(
+    #             status_code=status.HTTP_404_NOT_FOUND,
+    #             detail={"error": "User not found"},
+    #             headers={"X-Error": "body error"}
+    #         )
+    #     return UserPassSchema(
+    #         username=user.username,
+    #         email=user.email,
+    #         hashed_password=user.password)
