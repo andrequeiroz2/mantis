@@ -1,1 +1,7 @@
-Generic single-database configuration.
+Path: app/alembic.ini
+
+Comando inicial para gerar a migration automaticamente
+alembic revision --autogenerate -m "Added account table"
+
+Comando para aplicar a migration
+alembic upgrade head
