@@ -12,7 +12,7 @@ from sqlalchemy import (
 
 
 class LocationModel(Base):
-    __tablename__ = 'groups'
+    __tablename__ = 'locations'
     __repr_attrs__ = ["id", "user_uuid", "name", "latitude", "longitude", "description", "has_image"]
     __table_args__ = (Index("idx_location_001", "user_uuid", "name", unique=True),)
 

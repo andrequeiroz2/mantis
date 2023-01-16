@@ -3,17 +3,10 @@ from sqlalchemy import engine_from_config, pool
 from database.migration.helper import DBSchemaMigrate
 from alembic import context
 from core.config import settings
-from database.base import Base
 from database.model.location import LocationModel
-
+from database.base import Base
 
 target_metadata = Base.metadata
-
-# Configura contexto do migration
-# context.config.set_main_option(
-#     "sqlalchemy.url",
-#     f"postgresql+psycopg2://{settings.DBUSER}:{settings.DBPASSWORD}@{settings.DBHOST}:{settings.DBPORT}/{settings.DBBASE}"
-# )
 
 context.config.set_main_option("sqlalchemy.url", settings.SQLALCHEMY_DATABASE_STR)
 
