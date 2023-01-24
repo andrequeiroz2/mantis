@@ -56,7 +56,7 @@ services:
       context: ./user_service
       dockerfile: Dockerfile
     env_file:
-      - user_service/app/.env
+      - user_service/app/.env.user
     volumes:
       - ./user_service/app:/app
     ports:
@@ -84,6 +84,21 @@ services:
     networks:
       - vpc-back
 
+  aws_service:
+    image: service/aws_service
+    container_name: aws_service
+    restart: unless-stopped
+    build:
+      context: ./aws_service
+      dockerfile: Dockerfile
+    env_file:
+      - aws_service/app/.env.aws
+    ports:
+      - "8040:8040"
+    depends_on:
+      - db_device
+    networks:
+      - vpc-back
 
   apisix-dashboard:
     image: apache/apisix-dashboard:2.15.0-alpine
@@ -175,6 +190,21 @@ services:
     networks:
       vpc-back:
 
+#  rabbitmq:
+#    image: rabbitmq:3-management-alpine
+#    container_name: 'rabbitmq'
+#    user: root
+#    environment:
+#      RABBITMQ_DEFAULT_USER: "admin"
+#      RABBITMQ_DEFAULT_PASS: "admin123"
+#    ports:
+#      - 5672:5672
+#      - 15672:15672
+#    volumes:
+#      - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
+##      - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
+#    networks:
+#      vpc-back:
 
 networks:
   vpc-back:
