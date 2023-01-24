@@ -66,23 +66,23 @@ services:
     networks:
       - vpc-back
 
-  device_service:
-    image: service/device_service
-    container_name: device_service
-    restart: unless-stopped
-    build:
-      context: ./device_service
-      dockerfile: Dockerfile
-    env_file:
-      - device_service/app/.env.device
-    volumes:
-      - ./device_service/app:/app
-    ports:
-      - "8020:8020"
-    depends_on:
-      - db_device
-    networks:
-      - vpc-back
+#  device_service:
+#    image: service/device_service
+#    container_name: device_service
+#    restart: unless-stopped
+#    build:
+#      context: ./device_service
+#      dockerfile: Dockerfile
+#    env_file:
+#      - device_service/app/.env.device
+#    volumes:
+#      - ./device_service/app:/app
+#    ports:
+#      - "8020:8020"
+#    depends_on:
+#      - db_device
+#    networks:
+#      - vpc-back
 
   aws_service:
     image: service/aws_service

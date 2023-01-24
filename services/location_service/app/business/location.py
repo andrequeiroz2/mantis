@@ -20,15 +20,25 @@ class LocationBusiness:
             location_longitude: float,
             location_description: str
     ):
+        if image:
+            has_image = True
+        else:
+            has_image = False
 
-        request_user = requests.get(
-            'http://localhost:8010/api/userservice/internal/user',
-            params={'user_email': user_email}
-        )
+        try:
+            request_user = requests.get(
+                'http://localhost:8010/api/userservice/internal/user',
+                params={'user_email': user_email}
+            )
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="user service unavailable",
+                headers={"X-Error": "internal request error"}
+            )
 
         if request_user.status_code != 200:
             detail = json.loads(request_user.text)['detail']
-
             raise HTTPException(
                 status_code=request_user.status_code,
                 detail=detail,
@@ -36,11 +46,8 @@ class LocationBusiness:
             )
 
         user_uuid = json.loads(request_user.text)['user_uuid']
-        has_image = False
 
-        if image:
-
-            has_image = True
+        if has_image:
 
             files = {
                 'image': image.file,
@@ -52,12 +59,19 @@ class LocationBusiness:
                 'location_name': location_name
             }
 
-            request_s3 = requests.post(
-                'http://localhost:8040/api/awsservice/internal/s3/image/location',
-                files=files,
-                params=params
+            try:
+                request_s3 = requests.post(
+                    'http://localhost:8040/api/awsservice/internal/s3/image/location',
+                    files=files,
+                    params=params
 
-            )
+                )
+            except Exception:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="bucket service unavailable",
+                    headers={"X-Error": "internal request error"}
+                )
 
             if request_s3.status_code != 201:
                 raise HTTPException(
@@ -78,34 +92,11 @@ class LocationBusiness:
             )
             self.db.add(new_location)
             self.db.commit()
-            return new_location
-
         except Exception:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status_code=status.HTTP_409_CONFLICT,
                 detail="location already exists",
                 headers={"X-Error": "violates unique constraint"}
             )
 
-
-    # def _internal_request(self, method:str, path:str, obj:Any):
-    #     try:
-    #
-    #         if method == 'post':
-    #             resp = requests.post(path, obj)
-    #         elif method == 'get':
-    #             resp = requests.get(path, obj)
-    #         else:
-    #             raise HTTPException(
-    #                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #                 detail={"error": "method not Allowed"},
-    #                 headers={"X-Error": "internal request error"}
-    #             )
-    #         return resp
-    #
-    #     except Exception as e:
-    #         raise HTTPException(
-    #             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #             detail={"error": f"internal connection {e}"},
-    #             headers={"X-Error": "internal request error"}
-    #         )
+        return new_location

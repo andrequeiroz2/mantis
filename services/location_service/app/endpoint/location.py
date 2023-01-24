@@ -53,3 +53,7 @@ class LocationRouter:
         )
 
         return {"mgs": "success"}
+
+    @location_router.post("/health", status_code=status.HTTP_200_OK)
+    async def health(self):
+        return {"status": "ok"}
