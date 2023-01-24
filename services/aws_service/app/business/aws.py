@@ -11,18 +11,14 @@ class AwsBusiness:
         self,
         user_uuid: UUID,
         location_name: str,
-        image_name: str,
         image: UploadFile
     ):
-        extension = image.filename.split('.')[-1]
-
-        name = "{name}{point}{extension}".format(name=image_name, point=".", extension=extension)
 
         try:
             s3_client.upload_fileobj(
                 image.file,
                 settings.S3_AWS_BUCKET_NAME,
-                f"{settings.S3_AWS_BUCKET_PATH}/{user_uuid}/{location_name}/{name}")
+                f"{settings.S3_AWS_BUCKET_PATH}/{user_uuid}/{location_name}/{image.filename}")
         except (ClientError, ParamValidationError) as err:
             raise HTTPException(
                 status_code=status.HTTP_424_FAILED_DEPENDENCY,
