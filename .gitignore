@@ -103,16 +103,18 @@ celerybeat.pid
 
 # Environments
 .env
+.env*
 .venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
-.env.aws
-.env.user
-.env.device
-.env.location
+
+env.aws/
+env.user/
+env.device/
+env.location/
 
 # Spyder project settings
 .spyderproject
