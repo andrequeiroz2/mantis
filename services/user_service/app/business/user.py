@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from datetime import timedelta
 from schema.token import TokenSchema
-from schema.user import UserCreateSchema, UserPassSchema, UserSchema, UserListSchema
+from schema.user import UserCreateSchema, UserSchema, UserListSchema, UserUuidSchema
 from database.model.user import UserModel
 from dependency.oauth import ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token, decode_access_token
 import bcrypt
@@ -151,6 +151,17 @@ class UserBusiness:
                 detail={"error": detail_field},
                 headers={"X-Error": "body error"}
             )
+
+    ##INTERNAL REQUESTS
+    async def user_internal_get(self, email: str) -> UserUuidSchema:
+        user = self._user_filter_email(email)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": "User not found"},
+                headers={"X-Error": "path error"}
+            )
+        return UserUuidSchema(user_uuid=user.useruid)
 
     # def get_user(self, username: str):
     #     """

@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List
+from uuid import UUID
 
 
 class UserSchema(BaseModel):
@@ -37,3 +38,7 @@ class UserPassSchema(UserSchema):
 class UserTokenSchema(UserSchema):
     access_token: str
     token_type: str = "bearer"
+
+
+class UserUuidSchema(BaseModel):
+    user_uuid: UUID

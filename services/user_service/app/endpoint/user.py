@@ -1,7 +1,7 @@
 from fastapi import Depends, status, Header, Form
 from fastapi_utils.inferring_router import InferringRouter
 from schema.token import TokenSchema
-from schema.user import UserSchema, UserCreateSchema, UserListSchema
+from schema.user import UserSchema, UserCreateSchema, UserListSchema, UserUuidSchema
 from sqlalchemy.orm import Session
 from database.base import get_db
 from business.user import UserBusiness
@@ -39,3 +39,9 @@ async def access_validation(authorization: str = Header(None), db: Session = Dep
 @user_router.post("/health", status_code=status.HTTP_200_OK)
 async def health():
     return {"status": "ok"}
+
+
+##INTERNAL REQUESTS
+@user_router.get("/internal/user")
+async def user_internal_get(user_email: str, db: Session = Depends(get_db)) -> UserUuidSchema:
+    return await UserBusiness(db).user_internal_get(user_email)
