@@ -13,7 +13,6 @@ class AwsRouter:
     @aws_router.post("/internal/s3/image/location", status_code=status.HTTP_201_CREATED)
     async def s3_image_location_create(
             self,
-            image_name: str,
             user_uuid: UUID,
             location_name: str,
             image: UploadFile
@@ -22,6 +21,9 @@ class AwsRouter:
         return await AwsBusiness().s3_image_location_create(
             user_uuid=user_uuid,
             location_name=location_name,
-            image_name=image_name,
             image=image
         )
+
+    @aws_router.post("/health", status_code=status.HTTP_200_OK)
+    async def health(self):
+        return {"status": "ok"}
