@@ -1,8 +1,9 @@
 import json
 from sqlalchemy.orm import Session
 from fastapi import UploadFile, HTTPException, status
-import requests
 from database.model.location import LocationModel
+import requests
+from business.bucket_s3 import AwsBusiness
 
 
 class LocationBusiness:
@@ -48,36 +49,42 @@ class LocationBusiness:
 
         if has_image:
 
-            files = {
-                'image': image.file,
-            }
+            await AwsBusiness().s3_image_create(
+                user_uuid=user_uuid,
+                location_name=location_name,
+                image=image
+            )
 
-            params = {
-                'user_uuid': user_uuid,
-                'image_name': image_name,
-                'location_name': location_name
-            }
-
-            try:
-                request_s3 = requests.post(
-                    'http://localhost:8040/api/awsservice/internal/s3/image/location',
-                    files=files,
-                    params=params
-
-                )
-            except Exception:
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail="bucket service unavailable",
-                    headers={"X-Error": "internal request error"}
-                )
-
-            if request_s3.status_code != 201:
-                raise HTTPException(
-                    status_code=request_s3.status_code,
-                    detail=request_s3.text,
-                    headers={"X-Error": "internal request error"}
-                )
+            # # files = {
+            # #     'image': image,
+            # # }
+            # #
+            # # params = {
+            # #     'user_uuid': user_uuid,
+            # #     'location_name': location_name,
+            # #     'file_name': image.filename
+            # # }
+            # #
+            # # try:
+            # #     request_s3 = requests.post(
+            # #         'http://localhost:8040/api/awsservice/internal/s3/image/location',
+            # #         files=files,
+            # #         params=params
+            # #
+            # #     )
+            # # except Exception:
+            # #     raise HTTPException(
+            # #         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            # #         detail="bucket service unavailable",
+            # #         headers={"X-Error": "internal request error"}
+            # #     )
+            #
+            # if request_s3.status_code != 201:
+            #     raise HTTPException(
+            #         status_code=request_s3.status_code,
+            #         detail=request_s3.text,
+            #         headers={"X-Error": "internal request error"}
+            #     )
 
         try:
             new_location = LocationModel(
