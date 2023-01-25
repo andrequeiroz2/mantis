@@ -13,7 +13,6 @@ class LocationBusiness:
     async def post_location(
             self,
             user_email: str,
-            image_name: str,
             location_name: str,
             image: UploadFile,
             location_latitude: float,
@@ -83,7 +82,6 @@ class LocationBusiness:
         try:
             new_location = LocationModel(
                 user_uuid=user_uuid,
-                image_name=image_name,
                 has_image=has_image,
                 location_name=location_name,
                 latitude=location_latitude,
