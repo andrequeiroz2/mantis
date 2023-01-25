@@ -15,7 +15,6 @@ class LocationRouter:
     async def board_types_get_all(
             self,
             user_email: str,
-            image_name: str = Form(),
             image: UploadFile = File(),
             location_name: str = Form(...),
             latitude: float = Form(...),
@@ -44,7 +43,6 @@ class LocationRouter:
 
         await LocationBusiness(db).post_location(
             user_email=user_email,
-            image_name=image_name,
             image=image,
             location_name=location_name,
             location_latitude=latitude,

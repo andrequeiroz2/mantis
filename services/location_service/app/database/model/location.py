@@ -14,7 +14,7 @@ import uuid
 class LocationModel(Base):
     __tablename__ = 'locations'
     __repr_attrs__ = [
-        "id", "location_uuid", "user_uuid", "location_name", "image_name", "latitude",
+        "id", "location_uuid", "user_uuid", "location_name", "latitude",
         "longitude", "has_image", "description"
     ]
     __table_args__ = (
@@ -26,7 +26,6 @@ class LocationModel(Base):
     location_uuid = Column(UUIDType(binary=False), nullable=False, index=True, default=uuid.uuid4)
     user_uuid = Column(UUIDType(binary=False), nullable=False, index=True)
     location_name = Column(String(20), nullable=False, index=True)
-    image_name = Column(String(20), nullable=False, index=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     has_image = Column(Boolean, nullable=False)
