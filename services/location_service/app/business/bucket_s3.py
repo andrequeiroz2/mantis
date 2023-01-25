@@ -7,7 +7,7 @@ from botocore.exceptions import ParamValidationError
 
 class AwsBusiness:
 
-    async def s3_image_location_create(
+    async def s3_image_create(
         self,
         user_uuid: UUID,
         location_name: str,
