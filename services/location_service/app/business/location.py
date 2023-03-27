@@ -1,10 +1,10 @@
-import json
 from sqlalchemy.orm import Session
-from fastapi import UploadFile, HTTPException, status
+from fastapi import HTTPException, status
 from database.model.location import LocationModel
-import requests
-from business.bucket_s3 import AwsBusiness
-
+from schema.location import LocationSchema, LocationsSchema, LocationFilterSchema, LocationPutSchema
+from schema.user import UserEmailFilterSchema
+from pydantic import EmailStr
+from uuid import UUID
 
 class LocationBusiness:
 
@@ -13,95 +13,109 @@ class LocationBusiness:
 
     async def post_location(
             self,
-            user_email: str,
-            location_name: str,
-            image: UploadFile,
-            location_latitude: float,
-            location_longitude: float,
-            location_description: str
+            location_schema: LocationSchema,
     ):
-        if image:
-            has_image = True
-        else:
-            has_image = False
+        location = self.get_location(location_schema)
 
-        try:
-            request_user = requests.get(
-                'http://localhost:8010/api/userservice/internal/user',
-                params={'user_email': user_email}
-            )
-        except Exception:
+        if location:
             raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="user service unavailable",
-                headers={"X-Error": "internal request error"}
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Location name already exists",
             )
-
-        if request_user.status_code != 200:
-            detail = json.loads(request_user.text)['detail']
-            raise HTTPException(
-                status_code=request_user.status_code,
-                detail=detail,
-                headers={"X-Error": "internal request error"}
-            )
-
-        user_uuid = json.loads(request_user.text)['user_uuid']
-
-        if has_image:
-
-            await AwsBusiness().s3_image_create(
-                user_uuid=user_uuid,
-                location_name=location_name,
-                image=image
-            )
-
-            # # files = {
-            # #     'image': image,
-            # # }
-            # #
-            # # params = {
-            # #     'user_uuid': user_uuid,
-            # #     'location_name': location_name,
-            # #     'file_name': image.filename
-            # # }
-            # #
-            # # try:
-            # #     request_s3 = requests.post(
-            # #         'http://localhost:8040/api/awsservice/internal/s3/image/location',
-            # #         files=files,
-            # #         params=params
-            # #
-            # #     )
-            # # except Exception:
-            # #     raise HTTPException(
-            # #         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            # #         detail="bucket service unavailable",
-            # #         headers={"X-Error": "internal request error"}
-            # #     )
-            #
-            # if request_s3.status_code != 201:
-            #     raise HTTPException(
-            #         status_code=request_s3.status_code,
-            #         detail=request_s3.text,
-            #         headers={"X-Error": "internal request error"}
-            #     )
 
         try:
             new_location = LocationModel(
-                user_uuid=user_uuid,
-                has_image=has_image,
-                location_name=location_name,
-                latitude=location_latitude,
-                longitude=location_longitude,
-                description=location_description
+                user_email=location_schema.user_email,
+                location_name=location_schema.location_name,
+                latitude=location_schema.latitude,
+                longitude=location_schema.longitude,
+                description=location_schema.description
             )
             self.db.add(new_location)
-            self.db.commit()
         except Exception:
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="location already exists",
-                headers={"X-Error": "violates unique constraint"}
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Location server error",
             )
 
         return new_location
+
+    async def get_locations(self, user_email_filter_schema: UserEmailFilterSchema) -> [LocationsSchema]:
+        location_list_model = []
+        for location_model in self.db.query(LocationModel).filter_by(user_email=user_email_filter_schema.user_email).all():
+            location_list_model.append(
+                LocationsSchema(
+                    location_uuid=location_model.location_uuid,
+                    user_email=location_model.user_email,
+                    location_name=location_model.location_name,
+                    latitude=location_model.latitude,
+                    longitude=location_model.longitude,
+                    description=location_model.description,
+                )
+            )
+        return location_list_model
+
+    def get_location(self, location_filter_schema: LocationSchema):
+        try:
+            return self.db.query(LocationModel).filter_by(
+                user_email=location_filter_schema.user_email,
+                location_name=location_filter_schema.location_name
+                ).first()
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="location server error",
+            )
+
+    async def get_location_filter_email_uuid(self, location_filter_schema: LocationFilterSchema):
+        try:
+            location_model: LocationModel = self.db.query(LocationModel).filter_by(
+                user_email=location_filter_schema.user_email,
+                location_uuid=location_filter_schema.location_uuid
+            ).first()
+
+            return location_model
+
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="location server error",
+            )
+
+    async def put_location(
+            self,
+            user_email: EmailStr,
+            location_uuid: UUID,
+            location_schema: LocationPutSchema):
+
+        location_model_check = self.check_location_exists(
+            user_email=user_email,
+            location_name=location_schema.location_name,
+            location_uuid=location_uuid
+        )
+
+        if location_model_check:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Location name already exists",
+            )
+
+        location_model: LocationModel = self.db.query(LocationModel).filter_by(
+            user_email=user_email,
+            location_uuid=location_uuid
+        ).update({
+            "location_name": location_schema.location_name,
+            "latitude": location_schema.latitude,
+            "longitude": location_schema.longitude,
+            "description": location_schema.description
+        })
+
+        return location_model
+
+    def check_location_exists(self, user_email: EmailStr, location_name: str, location_uuid: UUID):
+        return self.db.query(LocationModel).filter(
+            LocationModel.user_email == user_email,
+            LocationModel.location_name == location_name,
+            LocationModel.location_uuid != location_uuid
+        ).first()
+

@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     DBPASSWORD = os.environ.get("DBPASSWORD")
     DBPORT = int(os.environ.get("DBPORT"))
     DBBASE = os.environ.get("DBBASE")
-    DBSHEMA = os.environ.get("DBSHEMA")
+    # DBSHEMA = os.environ.get("DBSHEMA")
 
 
 @lru_cache

@@ -2,7 +2,8 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from datetime import timedelta
 from schema.token import TokenSchema
-from schema.user import UserCreateSchema, UserSchema, UserListSchema, UserUuidSchema
+from schema.user import UserSchema, UserListSchema, UserUuidSchema, UserEmailFilter, \
+    UserHasSchema
 from database.model.user import UserModel
 from dependency.oauth import ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token, decode_access_token
 import bcrypt
@@ -31,7 +32,7 @@ class UserBusiness:
     async def user_get(self, user_id: int) -> UserSchema:
         return self._user_filter_id(user_id)
 
-    async def post_user(self, user_body: UserCreateSchema) -> UserModel:
+    async def post_user(self, user_body: UserSchema) -> UserModel:
         """
         Cadastra um novo usuario
         :param user_body: schema do pydantic
@@ -41,14 +42,28 @@ class UserBusiness:
         user = self._user_filter_email(user_body.email)
         if user:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail={"error": {"user": "user already registered"}},
-                headers={"X-Error": "body error"}
+                status_code=status.HTTP_409_CONFLICT,
+                detail={"error": "user already registered"},
+                headers={"X-Error": "internal request error"}
             )
-        new_user = UserModel(username=user_body.username, email=user_body.email, password=self._password_hashed(user_body.password))
+        new_user = UserModel(username=user_body.username, email=user_body.email)
         self.db.add(new_user)
-        self.db.commit()
+        # self.db.commit()
         return new_user
+
+    async def user_has(self, user_email_filter: UserEmailFilter) -> UserHasSchema:
+        try:
+            user = self._user_filter_email(user_email_filter.user_email)
+            has_user = True
+            if not user:
+                has_user = False
+            return UserHasSchema(check=has_user)
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="user service unavailable",
+                headers={"X-Error": "internal request error"}
+            )
 
     async def user_login(self, email: str, password: str) -> TokenSchema:
         """
@@ -74,7 +89,7 @@ class UserBusiness:
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(data={"email": user.email, "user": user.username}, expires_delta=access_token_expires)
 
-        return TokenSchema(access_token=access_token)
+        return TokenSchema(token=access_token)
 
     async def decode_token(self, token: str):
         decode_access_token(token)
@@ -124,32 +139,25 @@ class UserBusiness:
         return UserSchema( username=user.username, email=user.email)
 
     @staticmethod
-    def _user_body_check(user_body: UserCreateSchema):
+    def _user_body_check(user_body: UserSchema):
         """
         Verifica se o json enviado atende as regras
         :param user_body: schema do pydantic
         :return: Nao retorna
         """
-        detail_field = {}
+        error_field = False
 
-        if len(user_body.username) > 50 or len(user_body.username) < 5:
-            detail_field["username"] = "name must have a maximum of 50 and a minimum of 5 digits"
+        if len(user_body.username) > 50:
+            error_field = True
 
         email = user_body.email.replace(" ", "")
         if len(email) > 60 or not re.fullmatch(r"[^@]+@[^@]+\.[^@]+", email):
-            detail_field["email"] = "invalid email"
+            error_field = True
 
-        if len(user_body.password) > 50 or len(user_body.password) < 8:
-            detail_field["password"] = "password must have a maximum of 50 and a minimum of 8 digits"
-
-        if user_body.password != user_body.confirm_password:
-            detail_field["confirm_password"] = "password different from confirm_password"
-
-        if detail_field:
+        if error_field:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail={"error": detail_field},
-                headers={"X-Error": "body error"}
+                status_code=status.HTTP_417_EXPECTATION_FAILED,
+                detail={"error": "sytem error"},
             )
 
     ##INTERNAL REQUESTS

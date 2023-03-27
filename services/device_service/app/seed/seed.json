@@ -1,0 +1,12 @@
+{
+    "target_class": "IconModel",
+    "data": [
+        {
+            "name": "United Kingdom",
+            "icon": "UK"
+        }, {
+            "name": "Belgium",
+            "icon": "BE"
+        }
+    ]
+}

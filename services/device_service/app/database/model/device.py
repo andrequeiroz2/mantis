@@ -1,85 +1,155 @@
 from database.base import Base
 from sqlalchemy_utils import UUIDType
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 from sqlalchemy import (
     Column,
     Integer,
     Identity,
     String,
     Index,
-    ForeignKey
+    ForeignKey,
+    Boolean
 )
+import uuid
+
+
 
 from database.mixin.mixin_util import TimestampMixin
 
 
-class BoardTypeModel(Base, TimestampMixin):
-    __tablename__ = 'board_types'
-    __repr_attrs__ = ["id", "name", "model", "version", "description"]
-    __table_args__ = (Index("idx_board_type_01", "model", "version", unique=True),)
-
+class TypeDeviceModel(Base):
+    __tablename__ = 'type_devices'
     id = Column(Integer, Identity(), primary_key=True)
-    model = Column(String(50), nullable=False, index=True)
-    version = Column(String(10), nullable=False)
+    name = Column(String(50), nullable=False, unique=False)
+
+
+class HubModel(Base, TimestampMixin):
+    __tablename__ = 'hubs'
+    __table_args__ = (
+        Index("idx_hub_01", "name", "location_uuid", unique=True),
+        Index("idx_hub_02", "user_email", "name", unique=True),
+    )
+    id = Column(Integer, Identity(), primary_key=True)
+    user_email = Column(String(100), nullable=False, index=True)
+    hub_uuid = Column(UUIDType(binary=False), nullable=False, index=True, default=uuid.uuid4)
+    name = Column(String(50), nullable=False, unique=False)
     description = Column(String(150))
 
-    # controller = relationship("BoardModel", back_populates="board_types", innerjoin=True)
-
-
-class BoardModel(Base, TimestampMixin):
-    __tablename__ = 'boards'
-    __repr_attrs__ = ["id", "name", "description", "board_types_id", "user_uuid", "location_uuid"]
-    __table_args__ = (Index("idx_board_001", "name", "user_uuid", "location_uuid", unique=True),)
-
-    id = Column(Integer, Identity(), primary_key=True)
-    name = Column(String(50), nullable=False, index=True)
-    description = Column(String(150))
-    board_types_id = Column(Integer, ForeignKey("board_types.id"), nullable=False, index=True)
-    user_uuid = Column(UUIDType(binary=False), nullable=False, index=True)
     location_uuid = Column(UUIDType(binary=False), nullable=False, index=True)
+    last_will_id = Column(Integer, ForeignKey("last_wills.id"), nullable=True)
+    icons_id = Column(Integer, ForeignKey("icons.id"), nullable=False, index=True)
 
-    # board_types = relationship("BoardTypeModel", back_populates="controller", innerjoin=True)
-    shild = relationship("ShildModel", back_populates="board", innerjoin=True)
 
-
-class ShildModel(Base, TimestampMixin):
-    __tablename__ = 'shilds'
-    __repr_attrs__ = [
-        "id", "name", "model", "version", "description", "scale", "scale_max",
-        "scale_min", "command_on", "command_off", "command_generic", "board_id"
-    ]
+class SensorModel(Base, TimestampMixin):
+    __tablename__ = 'sensors'
+    __table_args__ = (
+        Index("idx_sensors_01", "name", "location_uuid", unique=True),
+        Index("idx_sensors_02", "name", "user_email", unique=True),
+    )
 
     id = Column(Integer, Identity(), primary_key=True)
-    name = Column(String(50), nullable=False, unique=True, index=True)
-    model = Column(String(50), nullable=False)
-    version = Column(String(10), nullable=False)
-    description = Column(String(150))
-    scale = Column(String(4))
-    scale_max = Column(Integer)
-    scale_min = Column(Integer)
-    command_on = Column(String(120))
-    command_off = Column(String(120))
-    command_generic = Column(String(120))
-
-    board_id = Column(Integer, ForeignKey("boards.id", ondelete="CASCADE"), nullable=False)
-
-    board = relationship("BoardModel", back_populates="shild", innerjoin=True)
-
-#
-# class ShildType(Base):
-#     __tablename__ = 'shild_types'
-#     id = Column(Integer, Identity(), primary_key=True)
-#     model = Column(String(50), index=True)
-#     version = Column(String(10))
-#     description = Column(String(150))
-
-# class TopicModel(Base):
-#     __tablename__ = 'cliente_mqtts'
-#     __repr_attrs__ = ["id", "topic", "topic_last_will", "message_last_will"]
-#
-#     id = Column(Integer, Identity(), primary_key=True)
-#     topic = Column(String(300), index=True, unique=True)
-#     topic_last_will = Column(String(300), index=True, unique=True)
-#     message_last_will = Column(String(300))
+    user_email = Column(String(100), nullable=False, index=True)
+    sensor_uuid = Column(UUIDType(binary=False), nullable=False, index=True, default=uuid.uuid4)
+    name = Column(String(50), nullable=False, unique=False, index=True)
+    description = Column(String(150), nullable=True)
+    location_uuid = Column(UUIDType(binary=False), nullable=False, index=True)
+    hub_id = Column(Integer, ForeignKey("hubs.id"), nullable=True, index=True)
+    last_will_id = Column(Integer, ForeignKey("last_wills.id"), nullable=True, index=True)
+    type_sensor_id = Column(Integer, ForeignKey("type_sensors.id"), nullable=False, index=True)
 
 
+class TypeSensorModel(Base):
+    __tablename__ = 'type_sensors'
+    id = Column(Integer, Identity(), primary_key=True)
+    name = Column(String(50), nullable=False, unique=True)
+    max_scale = Column(Integer, nullable=True)
+    min_scale = Column(Integer, nullable=True)
+    measure_id = Column(Integer, ForeignKey("measures.id"), nullable=False, index=True)
+    measure: "MeasureModel" = relationship("MeasureModel", innerjoin=True)
+
+
+class MeasureModel(Base):
+    __tablename__ = 'measures'
+    __table_args__ = (
+        Index("idx_measures_01", "name", "scale", unique=True),
+    )
+    id = Column(Integer, Identity(), primary_key=True)
+    name = Column(String(50), nullable=False)
+    scale = Column(String(3), nullable=False)
+    icon_id = Column(Integer, ForeignKey("icon_sensors.id"), nullable=False, index=True)
+    icon: "IconSensorModel" = relationship("IconSensorModel", innerjoin=True)
+
+
+class IconSensorModel(Base):
+    __tablename__ = 'icon_sensors'
+    id = Column(Integer, Identity(), primary_key=True)
+    font = Column(String(50), nullable=False)
+
+
+class ActuatorModel(Base, TimestampMixin):
+    __tablename__ = 'actuators'
+
+    id = Column(Integer, Identity(), primary_key=True)
+    actuator_uuid = Column(UUIDType(binary=False), nullable=False, index=True, default=uuid.uuid4)
+    name = Column(String(50), nullable=False, unique=False, index=True)
+    description = Column(String(150), nullable=True)
+    command_start = Column(String(50), nullable=True)
+    command_stop = Column(String(50), nullable=True)
+    command = Column(String(50), nullable=True)
+
+    location_uuid = Column(UUIDType(binary=False), nullable=False, index=True)
+    hub_id = Column(Integer, ForeignKey("hubs.id"), nullable=True, index=True)
+    last_will_id = Column(Integer, ForeignKey("last_wills.id"), nullable=True)
+    type_actuator_id = Column(Integer, ForeignKey("type_sensors.id"), nullable=False, index=True)
+
+
+class TypeActuatorModel(Base):
+    __tablename__ = 'type_actuators'
+    id = Column(Integer, Identity(), primary_key=True)
+    name = Column(String(50), nullable=False, unique=True)
+    icons_id = Column(Integer, ForeignKey("icons.id"), nullable=True, index=True)
+
+
+class PublisherModel(Base, TimestampMixin):
+    __tablename__ = 'publishers'
+    id = Column(Integer, Identity(), primary_key=True)
+    topic = Column(String(300), index=True, unique=True)
+    qos_id = Column(Integer, ForeignKey("qos.id"), nullable=False, default=1)
+    retain = Column(Boolean, nullable=False, default=True)
+    actuator_id = Column(Integer, ForeignKey("actuators.id"), nullable=False, index=True)
+
+
+class SubscriberModel(Base, TimestampMixin):
+    __tablename__ = 'subscribers'
+    id = Column(Integer, Identity(), primary_key=True)
+    topic = Column(String(300), index=True, unique=True)
+    qos_id = Column(Integer, ForeignKey("qos.id"), nullable=False, default=1)
+    sensor_id = Column(Integer, ForeignKey("sensors.id"), nullable=False, index=True)
+
+
+class LastWillModel(Base):
+    __tablename__ = 'last_wills'
+
+    id = Column(Integer, Identity(), primary_key=True)
+    topic = Column(String(300), index=True, unique=True)
+
+
+class QosModel(Base):
+    __tablename__ = 'qos'
+
+    id = Column(Integer, Identity(), primary_key=True)
+    qos = Column(Integer, nullable=False, unique=True)
+
+    @validates('qos')
+    def validate_qos(self, key, value):
+        if value not in (0, 1, 2):
+            raise ValueError('qos invalid value. Valid values are: 0, 1, 2')
+        return value
+
+
+class IconModel(Base):
+    __tablename__ = 'icons'
+
+    id = Column(Integer, Identity(), primary_key=True)
+    name = Column(String(50), nullable=False, unique=True)
+    icon = Column(String(50), nullable=False, unique=True)

@@ -3,8 +3,7 @@ from typing import Union
 
 
 class TokenSchema(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+    token: str
 
 
 class TokenDataSchema(BaseModel):

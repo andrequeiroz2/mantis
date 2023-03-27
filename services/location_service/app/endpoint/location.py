@@ -1,10 +1,13 @@
 from database.base import get_db
 from fastapi_utils.cbv import cbv
 from sqlalchemy.orm import Session
-from fastapi import Depends, status, UploadFile, File, HTTPException
+from fastapi import Depends, status
 from fastapi_utils.inferring_router import InferringRouter
 from business.location import LocationBusiness
-
+from schema.location import LocationSchema, LocationFilterSchema, LocationPutSchema
+from schema.user import UserEmailFilterSchema
+from pydantic import EmailStr
+from uuid import UUID
 
 location_router = InferringRouter()
 
@@ -13,47 +16,43 @@ location_router = InferringRouter()
 class LocationRouter:
 
     @location_router.post("/location", status_code=status.HTTP_201_CREATED)
-    async def board_types_get_all(
+    async def location_create(
             self,
-            user_email: str,
-            location_name: str,
-            latitude: float,
-            longitude: float,
-            description: str,
-            image: UploadFile = None,
+            location_schema: LocationSchema,
             db: Session = Depends(get_db)
     ):
+        return await LocationBusiness(db).post_location(location_schema)
 
-        if image:
+    @location_router.get("/location")
+    async def location_get_filter(
+            self,
+            location_filter_schema: LocationFilterSchema = Depends(),
+            db: Session = Depends(get_db)
+    ):
+        return await LocationBusiness(db).get_location_filter_email_uuid(location_filter_schema)
 
-            image_type = image.headers['content-type']
-
-            if image_type != 'image/png' and image_type != 'image/jpg' and image_type != 'image/jpeg':
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail="image with invalid extension. Use extensions: png, jpg, jpeg",
-                    headers={"X-Error": "multipart error"}
-                )
-
-            # byte_image = await image.read()
-            #
-            # if len(byte_image) > 1048576:
-            #     raise HTTPException(
-            #         status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            #         detail="image larger than 1MB",
-            #         headers={"X-Error": "multipart error"}
-            #     )
-
-        await LocationBusiness(db).post_location(
-            user_email=user_email,
-            image=image,
-            location_name=location_name,
-            location_latitude=latitude,
-            location_longitude=longitude,
-            location_description=description
+    @location_router.get("/locations")
+    async def location_get_all(
+            self,
+            user_email_filter_schema: UserEmailFilterSchema = Depends(),
+            db: Session = Depends(get_db)
+    ):
+        return await LocationBusiness(db).get_locations(
+            user_email_filter_schema,
         )
 
-        return {"mgs": "success"}
+    @location_router.put("/location/{user_email}/{location_uuid}")
+    async def location_update(
+            self,
+            user_email: EmailStr,
+            location_uuid: UUID,
+            location_schema: LocationPutSchema,
+            db: Session = Depends(get_db)):
+        return await LocationBusiness(db).put_location(
+            user_email=user_email,
+            location_uuid=location_uuid,
+            location_schema=location_schema
+        )
 
     @location_router.post("/health", status_code=status.HTTP_200_OK)
     async def health(self):

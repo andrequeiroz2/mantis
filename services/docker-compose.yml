@@ -2,21 +2,21 @@ version: "3.8"
 
 services:
 
-  db_user:
-    image: postgres:15.1
-    container_name: db_user
-    restart: unless-stopped
-    environment:
-      POSTGRES_PASSWORD: "postgres"
-      POSTGRES_USER: "postgres"
-      POSTGRES_DB: "user"
-    ports:
-      - "15432:5432"
-    volumes:
-      - db_user:/var/lib/postgresql/data
-      - ./user_service/app/database/script_db/start.sql:/docker-entrypoint-initdb.d/start.sql
-    networks:
-      - vpc-back
+#  db_user:
+#    image: postgres:15.1
+#    container_name: db_user
+#    restart: unless-stopped
+#    environment:
+#      POSTGRES_PASSWORD: "postgres"
+#      POSTGRES_USER: "postgres"
+#      POSTGRES_DB: "user"
+#    ports:
+#      - "15432:5432"
+#    volumes:
+#      - db_user:/var/lib/postgresql/data
+#      - ./user_service/app/database/script_db/start.sql:/docker-entrypoint-initdb.d/start.sql
+#    networks:
+#      - vpc-back
 
   db_device:
     image: postgres:15.1
@@ -48,21 +48,21 @@ services:
     networks:
       - vpc-back
 
-  user_service:
-    image: service/user_service
-    container_name: user_service
+  location_service:
+    image: service/location_service
+    container_name: location_service
     restart: unless-stopped
     build:
-      context: ./user_service
+      context: ./location_service
       dockerfile: Dockerfile
     env_file:
-      - user_service/app/.env.user
+      - location_service/app/.env.location
     volumes:
-      - ./user_service/app:/app
+      - ./location_service/app:/app
     ports:
-      - "8010:8010"
+      - "8030:8030"
     depends_on:
-      - db_user
+      - db_location
     networks:
       - vpc-back
 
@@ -190,21 +190,23 @@ services:
     networks:
       vpc-back:
 
-#  rabbitmq:
-#    image: rabbitmq:3-management-alpine
-#    container_name: 'rabbitmq'
-#    user: root
-#    environment:
-#      RABBITMQ_DEFAULT_USER: "admin"
-#      RABBITMQ_DEFAULT_PASS: "admin123"
-#    ports:
-#      - 5672:5672
-#      - 15672:15672
-#    volumes:
-#      - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
-##      - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
-#    networks:
-#      vpc-back:
+  emqx:
+    image: emqx/emqx:latest
+    restart: always
+    environment:
+      EMQX_NAME: emqx_service
+      EMQX_HOST: 127.0.0.1
+    ports:
+      - "18083:18083"
+      - "1883:1883"
+    volumes:
+      - vol-emqx-data:/opt/emqx/data
+      - vol-emqx-etc:/opt/emqx/etc
+      - vol-emqx-log:/opt/emqx/log
+    networks:
+      vpc-back:
+
+
 
 networks:
   vpc-back:
@@ -217,3 +219,10 @@ volumes:
   db_location:
   etcd_data:
     driver: local
+
+  vol-emqx-data:
+    name: foo-emqx-data
+  vol-emqx-etc:
+    name: foo-emqx-etc
+  vol-emqx-log:
+    name: foo-emqx-log
