@@ -13,7 +13,6 @@ from sqlalchemy import (
 import uuid
 
 
-
 from database.mixin.mixin_util import TimestampMixin
 
 
@@ -76,6 +75,7 @@ class MeasureModel(Base):
     id = Column(Integer, Identity(), primary_key=True)
     name = Column(String(50), nullable=False)
     scale = Column(String(3), nullable=False)
+    # scale_description = Column(String(50), nullable=False)
     icon_id = Column(Integer, ForeignKey("icon_sensors.id"), nullable=False, index=True)
     icon: "IconSensorModel" = relationship("IconSensorModel", innerjoin=True)
 
