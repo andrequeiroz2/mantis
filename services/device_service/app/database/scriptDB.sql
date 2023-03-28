@@ -21,17 +21,17 @@ VALUES
 ('DHT22-Humidity', 100, 0,  2),
 ('lm39x-Solo Humidity', 100, 0, 3);
 
-INSERT INTO measures(name, scale, icon_id)
+INSERT INTO measures(name, scale, scale_description, icon_id)
 VALUES
-("Temperature", 'C', 1),
-("Humidity", '%', 2),
-("Soil Humidity", '%', 3)
+('Temperature', 'C', 'Celsius', 1),
+('Humidity', '%', 'Percentage', 2),
+('Soil Humidity', '%', 'Percentage', 3)
 
 INSERT INTO icon_sensors (font)
 VALUES
-("faTemperatureFull"),
-("faDroplet")
-("faHandHoldingDroplet")
+('faTemperatureFull'),
+('faDroplet')
+('faHandHoldingDroplet')
 
 --INSERT INTO type_actuators(name, icons_id)
 --VALUES

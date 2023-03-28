@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from database.model.device import IconModel, LastWillModel, TypeDeviceModel, TypeSensorModel
-from schema.device import TypeDeviceList, TypeSensorListSchema
+from database.model.device import IconModel, LastWillModel, TypeDeviceModel, TypeSensorModel, SensorModel
+from schema.device import TypeDeviceList, TypeSensorListSchema, SensorPostSchema
 from schema.icon import IconSchema
 from schema.last_will import LastWillSchema, LastWillListSchema
 from fastapi import HTTPException, status
@@ -115,3 +115,12 @@ class DeviceBusiness:
                 )
             )
         return type_sensor_list
+
+    async def post_sensor(self, sensor_schema: SensorPostSchema):
+
+        sensor_dict = sensor_schema.dict(exclude_none=True)
+
+        new_sensor = SensorModel(**sensor_dict)
+
+        self.db.add(new_sensor)
+

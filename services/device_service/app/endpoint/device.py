@@ -5,6 +5,7 @@ from fastapi import Depends, status
 from fastapi_utils.cbv import cbv
 from business.device import IconBusiness, LastWillBusiness, DeviceBusiness
 from schema.icon import IconSchema
+from schema.device import SensorPostSchema
 from schema.last_will import LastWillSchema, LastWillListSchema
 
 device_router = InferringRouter()
@@ -63,6 +64,14 @@ class DeviceRouter:
     @device_router.get("/type_sensors")
     async def get_type_sensors(self, db: Session = Depends(get_db)):
         return await DeviceBusiness(db).get_type_sensors()
+
+@cbv(device_router)
+class DeviceSensor:
+    @device_router.post("/sensor", status_code=status.HTTP_201_CREATED)
+    async def sensor_create(self, sensor_schema: SensorPostSchema, db: Session = Depends(get_db)):
+        return await DeviceBusiness(db).post_sensor(sensor_schema)
+
+
 
 @cbv(device_router)
 class HealthRouter:
